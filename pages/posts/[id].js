@@ -1,5 +1,5 @@
 import Layout from '../../components/layout';
-import { getAllPostIds, getPostData } from '../../lib/posts-json';
+import { getSortedPostsData  } from '../../lib/posts-firebase.js';
 import Head from 'next/head';
 import Date from '../../components/date';
 import utilStyles from '../../styles/utils.module.css';
@@ -15,25 +15,36 @@ export default function Post({ postData }) {
         <div className={utilStyles.lightText}>
           <Date dateString={postData.date} />
         </div>
-        <div dangerouslySetInnerHTML={{ __html: postData.contentHtml }} />
+        <div dangerouslySetInnerHTML={{ __html: postData.content }} />
       </article>
     </Layout>
   );
 }
 
 export async function getStaticPaths() {
-  const paths = getAllPostIds();
-  return {
-    paths,
-    fallback: false,
+const posts = await getSortedPostsData();
+
+const paths = posts.map(post => ({ 
+
+  params : { id: post.id }
+}));
+
+return {
+  paths,
+  fallback: true
   };
 }
 
 export async function getStaticProps({ params }) {
-  const postData = await getPostData(params.id);
+  // Fetch all posts from Firebase
+  const posts = await getSortedPostsData();
+
+  // Find the post that matches the ID in the URL
+  const postData = posts.find(post => post.id === params.id);
+
   return {
     props: {
-      postData,
-    },
+      postData: postData || null // Return null if not found
+    }
   };
 }
